@@ -33,7 +33,7 @@ def sendto140(line):
         query_result = json.loads(res.read().decode('utf8'))
         return sentiment_dict[int(query_result["data"][0]["polarity"])]
     except:
-        print("Fail : " + query_dict)
+        print("Fail : " + line)
         return sentiment_dict[2]
 
 
@@ -46,19 +46,25 @@ sentiment_dict = {
 ed = EmotionDetection()
 
 if __name__ == "__main__":
+
     dir_path = '../datasets/depression_raw_pickle/'
     out_dir_path = '../datasets/depression_senti_emo_pickle/'
     files = os.listdir(dir_path)
-
+    done_files = os.listdir(out_dir_path)
     print('Reading Patients, total:{}'.format(len(files)))
 
     # Read all timelines from pickles
     depression_timelines = [pd.read_pickle(dir_path + file) for file in files]
 
     for i, timeline in enumerate(depression_timelines):
+
+        if timeline.uid[0] in done_files: continue # check repeat
+
         total = timeline.shape[0]
         senti_array = np.zeros(total)
         emo_array = [[],[],[]]
+
+        # go through each tweet
         for j, tweet in enumerate(timeline.tweet):
             # sentiments query
             senti_res = sendto140(tweet)
@@ -77,7 +83,7 @@ if __name__ == "__main__":
             emo_array[1].append(emotion2)
             emo_array[2].append(ambiguous)
 
-            print("{}({}/{})-\tsentiment:{:2d}, emotion:{:4s}/{:4s}/{:4s}, tweet:{}".format(i, j + 1, total, senti_res, emotion1[:4], emotion2[:4], ambiguous, tweet))
+            print("{}({}/{}) - sentiment:{:2d}, emotion:{:4s}/{:4s}/{:3s}, tweet:{}".format(i, j + 1, total, senti_res, emotion1[:4], emotion2[:4], ambiguous, tweet))
 
         # append result to timeline dataframe
         timeline['senti'] = senti_array
